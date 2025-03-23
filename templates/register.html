@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-Ticket Registration </title>
+    <!-- Include Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- For ApexCharts CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.css" rel="stylesheet">
+    <!-- For ApexCharts JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}" />
+</head>
+
+<body>
+    <div class="main">
+        <div class="regalign">
+            <div class="login-card">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <p>Create your account</p>
+                    </div>
+                </div>
+                <form id="signupForm" action="/submit_register" method="POST" enctype="multipart/form-data">
+
+                    <div class="form-group">
+                        <label for="fname">First Name</label>
+                        <input type="text" id="firstname" name="firstname" placeholder="Enter your first name">
+                        <div class="error" id="fnameError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lname">Last Name</label>
+                        <input type="text" id="lastname" name="lastname" placeholder="Enter your last name">
+                        <div class="error" id="lnameError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lname">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email">
+                        <div class="error" id="emailError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" id="phone" name="phone" placeholder="Enter your phone number">
+                        <div class="error" id="phoneError"></div>
+
+                        <div class="form-group">
+                            <label for="directorate">Profile Picture</label>
+                            <input type="file" id="profile_picture" name="profile_picture" placeholder="">
+                            <div class="error" id="profile_pictureError"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Create Password</label>
+                            <input type="password" id="password_hash" name="password_hash"
+                                placeholder="Create New Password">
+                            <div class="error" id="passwordError"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="con_password">Confirm Password</label>
+                            <input type="password" id="con_password_hash" name="con_password_hash"
+                                placeholder="Retype Password">
+                            <div class="error" id="con_passwordError"></div>
+                        </div>
+
+                        <!-- Hidden input to automatically set role as "passenger" -->
+                        <input type="hidden" id="role" name="role" value="passenger">
+
+                        <!-- Hidden input to automatically set role as "passenger" -->
+                        <input type="hidden" id="status" name="status" value="active">
+
+                        <button type="submit" class="login-btn" id="loginButton">
+                            Sign up
+                        </button>
+                </form>
+
+                <div class="signup-link">
+                    <p>Already have an account? <a href="/login">Signin</a></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!--  Ensure the script is linked correctly -->
+    <script>
+
+
+        // REGISTRATION VALIDATION STARTS HERE --------------------------------------------------------------
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const formRegister = document.getElementById('signupForm');
+
+            formRegister.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                // Get user registration input values
+                const firstname = document.getElementById('firstname').value;
+                const lastname = document.getElementById('lastname').value;
+                const email = document.getElementById('email').value;
+                const phone = document.getElementById('phone').value;
+                const profile_picture = document.getElementById('profile_picture').files[0];
+                const password_hash = document.getElementById('password_hash').value;
+                const con_password_hash = document.getElementById('con_password_hash').value;
+                const role = document.getElementById('role').value;
+                const status = document.getElementById('status').value;
+
+                // Error message containers
+                let fnameError = document.getElementById('fnameError');
+                let lnameError = document.getElementById('lnameError');
+                let emailError = document.getElementById('emailError');
+                let phoneError = document.getElementById('phoneError');
+                let profile_pictureError = document.getElementById('profile_pictureError').textContent = "";
+                let password_hashError = document.getElementById('passwordError');
+                let con_passwordError = document.getElementById('con_passwordError');
+
+                // Reset error messages
+                fnameError.textContent = "";
+                lnameError.textContent = "";
+                emailError.textContent = "";
+                phoneError.textContent = "";
+                profile_pictureError.textContent = "";
+                password_hashError.textContent = "";
+                con_passwordError.textContent = "";
+
+                let hasError = false;
+
+                if (!firstname) {
+                    fnameError.textContent = "Firstname cannot be empty";
+                    hasError = true;
+                }
+                if (!lastname) {
+                    lnameError.textContent = "Lastname cannot be empty";
+                    hasError = true;
+                }
+                if (!email) {
+                    emailError.textContent = 'Email cannot be empty';
+                    hasError = true;
+                }
+                if (!phone) {
+                    phoneError.textContent = 'Phone Number cannot be empty';
+                    hasError = true;
+                }
+                if (!profile_picture) {
+                    profile_pictureError.textContent = 'Profile Picture cannot be empty';
+                    hasError = true;
+                } else {
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+                    if (!allowedTypes.includes(profile_picture.type)) {
+                        profile_pictureError.textContent = 'Only JPG, PNG images are allowed';
+                        hasError = true;
+                    }
+                    const maxSize = 5 * 1024 * 1024; // 5MB
+                    if (profile_picture.size > maxSize) {
+                        profile_pictureError.textContent = 'File size must be less than 5MB';
+                        hasError = true;
+                    }
+                }
+                if (!password_hash) {
+                    password_hashError.textContent = 'Password cannot be empty';
+                    hasError = true;
+                }
+                if (con_password_hash !== password_hash) {
+                    con_passwordError.textContent = 'Password Mismatch... Try again';
+                    hasError = true;
+                }
+
+                // If there are any errors, stop the form submission
+                if (hasError) {
+                    return; // Do nothing if validation failed
+                }
+
+                // Proceed to submit the form if no errors
+                try {
+                    const formData = new FormData();
+                    formData.append('firstname', firstname);
+                    formData.append('lastname', lastname);
+                    formData.append('email', email);
+                    formData.append('phone', phone);
+                    formData.append('profile_picture', profile_picture);
+                    formData.append('password_hash', password_hash);
+                    formData.append('con_password_hash', con_password_hash);
+                    formData.append('role', role);
+                    formData.append('status', status);
+
+                    const response = await fetch('/submit_register', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    console.log("Server response:", result);
+
+                    if (result.success) {
+                        alert(result.message);
+                        window.location.href = '/login'; // Redirect to login page
+                    } else {
+                        alert('Registration failed: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('Fetch error: ', error);
+                    alert('An error occurred while submitting the form');
+                }
+            });
+        });
+
+
+        // REGISTRATION VALIDATION ENDS HERE ------------------------------------------------------------
+
+
+
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Rail e-Ticket Admin Dashboard</title>
+
+  <!-- Montserrat Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <!-- Material Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <!-- For ApexCharts CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.css" rel="stylesheet">
+  <!-- For ApexCharts JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"></script>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}" />
+</head>
+
+<body>
+  <div class="grid-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="menu-icon" onclick="openSidebar()">
+        <span class="material-icons-outlined">menu</span>
+      </div>
+      <div class="header-left">
+        <span class="material-icons-outlined">search</span>
+      </div>
+      <div class="header-right">
+        <span class="material-icons-outlined">notifications</span>
+        <span class="material-icons-outlined">email</span>
+        <span class="material-icons-outlined">account_circle</span>
+      </div>
+    </header>
+    <!-- End Header -->
+
+    <!-- Main -->
+    <main class="main-container">
+      <div class="main-title">
+        <p class="font-weight-bold">ADMIN DASHBOARD</p><span> Welcome Ubong Udofia</span>
+      </div>
+
+      <!-- Include Sidebar Here -->
+      {% include "sidebar.html" %}
+
+      <div id="content-area">
+
+        {% if content and content != "admin.html" %}
+        {% include content %}
+        {% endif %}
+
+
+
+      </div>
+
+
+    </main>
+    <!-- End Main -->
+
+  </div>
+
+  <!-- Scripts -->
+  <!-- ApexCharts -->
+  
+  <!--  Ensure the script is linked correctly -->
+  <script>
+ const socket = io.connect('http://127.0.0.1:5009');
+
+    document.addEventListener("DOMContentLoaded", function () {
+      setActiveSidebar();
+    });
+
+    function setActiveSidebar() {
+      const currentPath = window.location.pathname;
+
+      document.querySelectorAll(".sidebar-list-item a").forEach((item) => {
+        if (item.getAttribute("href") === currentPath) {
+          item.classList.add("active");
+        } else {
+          item.classList.remove("active");
+        }
+      });
+    }
+
+  
+
+
+
+
+
+    // ---------- CHARTS ----------
+
+    // BAR CHART
+    const barChartOptions = {
+      series: [
+        {
+          data: [10, 8, 6, 4, 2],
+        },
+      ],
+      chart: {
+        type: 'bar',
+        height: 350,
+        toolbar: {
+          show: false,
+        },
+      },
+      colors: ['#246dec', '#cc3c43', '#367952', '#f5b74f', '#4f35a1'],
+      plotOptions: {
+        bar: {
+          distributed: true,
+          borderRadius: 4,
+          horizontal: false,
+          columnWidth: '40%',
+        },
+      },
+      dataLabels: {
+        enabled: false,
+      },
+      legend: {
+        show: false,
+      },
+      xaxis: {
+        categories: ['Laptop', 'Phone', 'Monitor', 'Headphones', 'Camera'],
+      },
+      yaxis: {
+        title: {
+          text: 'Count',
+        },
+      },
+    };
+
+    const barChart = new ApexCharts(
+      document.querySelector('#bar-chart'),
+      barChartOptions
+    );
+    barChart.render();
+
+    // AREA CHART
+    const areaChartOptions = {
+      series: [
+        {
+          name: 'Purchase Orders',
+          data: [31, 40, 28, 51, 42, 109, 100],
+        },
+        {
+          name: 'Sales Orders',
+          data: [11, 32, 45, 32, 34, 52, 41],
+        },
+      ],
+      chart: {
+        height: 350,
+        type: 'area',
+        toolbar: {
+          show: false,
+        },
+      },
+      colors: ['#4f35a1', '#246dec'],
+      dataLabels: {
+        enabled: false,
+      },
+      stroke: {
+        curve: 'smooth',
+      },
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+      markers: {
+        size: 0,
+      },
+      yaxis: [
+        {
+          title: {
+            text: 'Purchase Orders',
+          },
+        },
+        {
+          opposite: true,
+          title: {
+            text: 'Sales Orders',
+          },
+        },
+      ],
+      tooltip: {
+        shared: true,
+        intersect: false,
+      },
+    };
+
+    const areaChart = new ApexCharts(
+      document.querySelector('#area-chart'),
+      areaChartOptions
+    );
+    areaChart.render();
+
+
+    // real time
+
+   
+
+    // Initialize charts for two different divs
+    let chart1 = new ApexCharts(document.querySelector("#line-chart"), {
+      chart: {
+        type: 'line',
+        height: 350
+      },
+      series: [{
+        name: 'Users Registered',
+        data: []  // Initially empty; will be populated by WebSocket events
+      }],
+      xaxis: {
+        type: 'datetime'
+      }
+    });
+
+    let chart2 = new ApexCharts(document.querySelector("#line-chart-2"), {
+      chart: {
+        type: 'line',
+        height: 350
+      },
+      series: [{
+        name: 'Payments and Tickets',
+        data: []  // Initially empty; will be populated by WebSocket events
+      }],
+      xaxis: {
+        type: 'datetime'
+      }
+    });
+
+    chart1.render();  // Render first chart
+    chart2.render();  // Render second chart
+
+    // Listen for the 'user_registered' event and update chart
+    socket.on('user_registered', (data) => {
+      console.log('New user registered:', data);
+      // Update the chart with the new data
+      updateChart(chart1, data);
+    });
+
+    // Function to update the chart with new data
+    function updateChart(chart, data) {
+      const now = new Date().getTime();
+      chart.updateSeries([{
+        data: [...chart.w.globals.series[0], { x: now, y: chart.w.globals.series[0].length + 1 }]
+      }]);
+    }
+
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>
+
+
+
+<script>
+
+
+const socket = io("http://localhost:5009");
+
+
+// ============================ SEAT AVAILABILITY ==================================================
+
+// Listen for real-time seat updates
+socket.on("seat_update", (data) => {
+    console.log("Updated Seat Availability:", data);
+    updateSeatAvailabilityOnUI(data);
+});
+
+// Request seat update manually
+function requestSeatUpdate(route_id) {
+    socket.emit("request_seat_update", { route_id });
+}
+
+// Example function to update UI
+function updateSeatAvailabilityOnUI(data) {
+    const routeId = data.route_id;
+    const stations = data.stations;
+
+    stations.forEach(station => {
+        const seatElement = document.getElementById(`seats_${station.station_id}`);
+        if (seatElement) {
+            seatElement.textContent = `Seats: ${station.available_seats}`;
+        }
+    });
+}
+
+
+
+socket.on("fare_updates", (data) => {
+    console.log("Updated Fares:", data.fares);
+
+    data.fares.forEach(fare => {
+        document.querySelector(`#fare-${fare.station_name}`).innerText = `$${fare.current_fare}`;
+    });
+});
+
+// ============================== DYNAMIC PRICING ===========================================
+
+
+// Listen for fare updates
+socket.on("fare_update", (data) => {
+    console.log("Updated Fare:", data.fare);
+    document.getElementById("fare_display").innerText = `Updated Fare: $${data.fare}`;
+});
+
+// Function to book a seat (simulate seat reservation)
+async function bookSeat(route_id, from_station, to_station) {
+    try {
+        // Emit event when seat is booked
+        socket.emit("seat_booked", { route_id, from_station, to_station });
+
+        // Optionally, update the UI immediately
+        document.getElementById("fare_display").innerText = "Updating fare...";
+    } catch (error) {
+        console.error("Booking failed:", error);
+    }
+}
+
+// Example: Simulate a seat booking
+document.getElementById("book_button").addEventListener("click", function () {
+    bookSeat("route123", "lagos", "abuja");
+});
+
+</script>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/ionicons@5.4.0/dist/ionicons.js"></script>
+    <title>Rail e-Ticket </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}" />
+</head>
+
+<body>
+
+    <div class="main">
+        <div class="navbar">
+            <div class="icon">
+                <h2 class="logo">Rail e-Ticket</h2>
+            </div>
+        </div>
+        <div class="contents">
+            <div class="welcome">
+                <h1>Seamless Rail Ticketing,<br><span>Anytime, </span>Anywhere!</h1>
+                <p class="par">Book, Manage, and Travel with Ease—Your Journey Starts Here!<br>
+                </p>
+                <button class="cn"><a href="#">LEARN MORE</a></button> <button class="cnb"><a href="/register">GET
+                        STARTED</a></button>
+            </div>
+            <form class="form" id="adminForm">
+                <h2>Login Here</h2>
+                <input type="email" id="email" name="email" placeholder="Enter Email Here"><br>
+                <div id="emailError"></div>
+                <input type="password" id="password" name="password" placeholder="Enter Password Here"><br>
+                <div id="passwordError"></div>
+                <button type="submit" class="btnn" id="loginButton">Login</button>
+                <p class="link">Don't have an account<br>
+                    <a style="padding-top: 10px;" href="/register">Sign up </a> here</a>
+                </p>
+            </form>
+
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const adminForm = document.getElementById("adminForm");
+
+            adminForm.addEventListener("submit", function (event) {
+
+                event.preventDefault();
+
+                document.getElementById("emailError").textContent = '';
+                document.getElementById("passwordError").textContent = '';
+
+                let isValid = true;
+                const email = document.getElementById("email").value.trim();
+                const password = document.getElementById("password").value.trim();
+
+                if (email === "") {
+                    document.getElementById("emailError").textContent = "Email is required.";
+                    isValid = false;
+                }
+
+                if (password === "") {
+                    document.getElementById("passwordError").textContent = "Password is required.";
+                    isValid = false;
+                }
+
+                if (!isValid) return;
+
+                fetch('/admin_login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            sessionStorage.setItem("email", email);
+                            window.location.href = data.redirect;
+                        } else {
+                            document.getElementById("passwordError").textContent = data.error;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Login error:", error);
+                    });
+
+            })
+
+        })
+
+
+    </script>
+</body>
+
+</html>

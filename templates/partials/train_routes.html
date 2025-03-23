@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+
+    <div class="table-container">
+        <main class="table" id="customers_table">
+            <section class="table__header">
+                <h1>Available Trains</h1>
+                <div class="input-group">
+                    <input type="text" id="search-box" placeholder="Search by route or station..."
+                        onkeyup="filterRoutes()">
+                    <img src="{{ url_for('static', filename='images/search.png') }}" alt="">
+                </div>
+                <div class="export__file">
+                    <label for="export-file" class="export__file-btn" title="Export File"></label>
+                    <input type="checkbox" id="export-file">
+                    <div class="export__file-options">
+                        <label>Export As &nbsp; &#10140;</label>
+                        <label for="export-file" id="toPDF">PDF <img
+                                src="{{ url_for('static', filename='images/pdf.png') }}" alt=""></label>
+                        <label for="export-file" id="toJSON">JSON <img
+                                src="{{ url_for('static', filename='images/json.png') }}" alt=""></label>
+                        <label for="export-file" id="toCSV">CSV <img
+                                src="{{ url_for('static', filename='images/csv.png') }}" alt=""></label>
+                        <label for="export-file" id="toEXCEL">EXCEL <img
+                                src="{{ url_for('static', filename='images/excel.png') }}" alt=""></label>
+                    </div>
+                </div>
+            </section>
+            <section class="table__body">
+
+
+                <div class="filter">
+                    <label for="filter">Filter By Status:</label>
+                    <select id="filter">
+                        <option value="All">All</option>
+                        <option value="active">Active</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="out-of-service">Out of Service</option>
+                    </select>
+                </div>
+
+                <!-- <div class="add__new">
+                <a href="/add_train" class="add__new-btn">Add New Train</a>
+            </div> -->
+
+
+                <table id="trainTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)"> Route Name <span class="icon-arrow">&UpArrow;</span></th>
+                            <th onclick="sortTable(1)"> Total Distance (km) <span class="icon-arrow">&UpArrow;</span>
+                            </th>
+                            <th onclick="sortTable(2)"> Train Capacity <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Station (Distance & Fare Multiplier) <span class="icon-arrow">&UpArrow;</span></th>
+
+                    </thead>
+                    <tbody id="routes-table">
+                        <!-- Data will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+    </div>
+</body>
+
+</html>
+
+<script>
+    // Fetch routes from Flask API
+    // fetch("/get_routes")
+    //     .then(response => response.json())
+    //     .then(routes => {
+    //         const tableBody = document.getElementById("routes-table");
+    //         tableBody.innerHTML = "";
+
+    //         routes.forEach(route => {
+    //             const row = document.createElement("tr");
+
+    //             row.innerHTML = `
+    //                     <td>${route.route_name}</td>
+    //                     <td>${route.distance_km} km</td>
+    //                     <td>${route.train_capacity}</td>
+    //                     <td>
+    //                         <ul>
+    //                             ${route.stations.map(station =>
+    //                 `<li>${station.station_name} (${station.distance_from_start_km} km, x${station.fare_multiplier})</li>`
+    //             ).join('')}
+    //                         </ul>
+    //                     </td>
+    //                 `;
+
+    //             tableBody.appendChild(row);
+    //         });
+    //     })
+    //     .catch(error => console.error("Error fetching routes:", error));
+
+
+
+    // Filter routes by route name or station name
+    let routesData = [];
+    const socket = io("http://127.0.0.1:5009");
+
+    // Fetch routes from Flask API
+    fetch("/get_routes")
+        .then(response => response.json())
+        .then(routes => {
+            routesData = routes;
+            displayRoutes(routesData);
+        })
+        .catch(error => console.error("Error fetching routes:", error));
+
+    // Listen for real-time route updates
+    socket.on("update_routes", (routes) => {
+        console.log("Routes updated:", routes);
+        routesData = routes;
+        displayRoutes(routesData);
+    });
+
+
+
+
+    // Function to display routes in table
+    function displayRoutes(routes) {
+        const tableBody = document.getElementById("routes-table");
+        tableBody.innerHTML = "";
+
+        routes.forEach(route => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                    <td>${route.route_name}</td>
+                    <td>${route.distance_km} km</td>
+                    <td>${route.train_capacity}</td>
+                    <td>
+                        <ul>
+                            ${route.stations.map(station =>
+                `<li>${station.station_name} (${station.distance_from_start_km} km, x${station.fare_multiplier})</li>`
+            ).join('')}
+                        </ul>
+                    </td>
+                `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    // Function to filter table based on search input
+    function filterRoutes() {
+        const searchValue = document.getElementById("search-box").value.toLowerCase();
+        const filteredRoutes = routesData.filter(route =>
+            route.route_name.toLowerCase().includes(searchValue) ||
+            route.stations.some(station => station.station_name.toLowerCase().includes(searchValue))
+        );
+        displayRoutes(filteredRoutes);
+    }
+
+    // Function to sort table columns
+    function sortTable(columnIndex) {
+        const table = document.querySelector("table");
+        let rows = Array.from(document.querySelectorAll("#routes-table tr"));
+        let isAscending = table.dataset.sortOrder === "asc";
+
+        rows.sort((rowA, rowB) => {
+            let cellA = rowA.cells[columnIndex].textContent.replace(" km", "").replace("⬍", "").trim();
+            let cellB = rowB.cells[columnIndex].textContent.replace(" km", "").replace("⬍", "").trim();
+
+            if (!isNaN(cellA) && !isNaN(cellB)) {
+                return isAscending ? cellA - cellB : cellB - cellA;
+            } else {
+                return isAscending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            }
+        });
+
+        table.dataset.sortOrder = isAscending ? "desc" : "asc";
+        document.getElementById("routes-table").innerHTML = "";
+        rows.forEach(row => document.getElementById("routes-table").appendChild(row));
+    }
+
+
+    fetch('/add_route', {
+        method: 'POST',  // ✅ Ensure method is POST
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            route_name: "Test Route",
+            stations: [
+                { station_id: "STN004", station_name: "Test Station", distance_from_start_km: 50, fare_multiplier: 1.3 }
+            ],
+            distance_km: 300,
+            base_rate: 2000,
+            train_capacity: 150
+        })
+    })
+        .then(response => response.json())
+        .then(data => console.log("Route added:", data))
+        .catch(error => console.error("Error:", error));
+
+
+
+</script>

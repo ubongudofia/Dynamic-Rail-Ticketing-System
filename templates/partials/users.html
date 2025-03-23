@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rail e-Ticketing Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        #line-chart {
+            border: 2px solid red;
+            /* Debugging: Add a border to check visibility */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="charts">
+
+        <div class="charts-card">
+            <p class="chart-title">User Registration Chart</p>
+            <div id="line-chart"></div>
+        </div>
+
+        <div class="charts-card">
+            <p class="chart-title">Payments and Tickets</p>
+            <div id="bar-chart"></div>
+        </div>
+
+    </div><br><br>
+
+    <div class="table-container">
+        <main class="table" id="customers_table">
+            <section class="table__header">
+                <h1>Registered Users</h1>
+                <div class="input-group">
+                    <input type="search" placeholder="Search Data...">
+                    <img src="{{ url_for('static', filename='images/search.png') }}" alt="">
+                </div>
+                <div class="export__file">
+                    <label for="export-file" class="export__file-btn" title="Export File"></label>
+                    <input type="checkbox" id="export-file">
+                    <div class="export__file-options">
+                        <label>Export As &nbsp; &#10140;</label>
+                        <label for="export-file" id="toPDF">PDF <img
+                                src="{{ url_for('static', filename='images/pdf.png') }}" alt=""></label>
+                        <label for="export-file" id="toJSON">JSON <img
+                                src="{{ url_for('static', filename='images/json.png') }}" alt=""></label>
+                        <label for="export-file" id="toCSV">CSV <img
+                                src="{{ url_for('static', filename='images/csv.png') }}" alt=""></label>
+                        <label for="export-file" id="toEXCEL">EXCEL <img
+                                src="{{ url_for('static', filename='images/excel.png') }}" alt=""></label>
+                    </div>
+                </div>
+            </section>
+
+            <section class="table__body">
+                <label for="filter">Filter by Status:</label>
+                <select id="filter">
+                    <option value="All">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <table id="userTable">
+                    <thead>
+                        <tr>
+                            <th> Profile Picture <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Firstname <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Lastname <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Email <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Phone Number <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Role <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Status <span class="icon-arrow">&UpArrow;</span></th>
+                            <th> Action <span class="icon-arrow">&UpArrow;</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="userBody">
+                    </tbody>
+                </table>
+            </section>
+        </main>
+
+    </div>
+
+
+
+
+
+
+
+
+
+
+    <script>
+        let chart = null;
+
+        async function fetchUserRegistrationTrend() {
+            try {
+                const response = await fetch("http://127.0.0.1:5009/user_registration_trend");
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                console.log("Raw Data from Backend:", data);
+
+                if (!data.dates || !Array.isArray(data.dates)) {
+                    console.error("Invalid data format:", data);
+                    return;
+                }
+
+                let seriesData = {};
+                data.dates.sort().forEach(date => {
+                    seriesData[date] = (seriesData[date] || 0) + 1;
+                });
+
+                console.log("Series Data:", seriesData);
+
+                let chartSeries = Object.entries(seriesData).map(([date, count]) => ({
+                    x: new Date(date).getTime(),
+                    y: count
+                }));
+
+                console.log("Processed Chart Data:", chartSeries);
+
+                if (chartSeries.length === 0) {
+                    console.error("No valid data to display.");
+                    return;
+                }
+
+                renderChart(chartSeries);
+
+            } catch (error) {
+                console.error("Error fetching user registration trend:", error);
+            }
+        }
+
+        function renderChart(chartSeries) {
+            const chartElement = document.querySelector("#line-chart");
+            if (!chartElement) {
+                console.error("Chart element not found.");
+                return;
+            }
+
+            if (chart) {
+                chart.destroy(); // Destroy existing chart before re-rendering
+            }
+
+            const options = {
+                chart: {
+                    type: "line",
+                    height: 350
+                },
+                series: [{ name: "Registrations", data: chartSeries }],
+                xaxis: { type: "datetime" }
+            };
+
+            chart = new ApexCharts(chartElement, options);
+            chart.render();
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetchUserRegistrationTrend();
+            setInterval(fetchUserRegistrationTrend, 30000);
+        });
+
+
+
+
+
+
+// DYNAMICALLY DISPLAY USER TABLE
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const tableBody = document.getElementById("userBody");
+            const filterDropdown = document.getElementById("filter");
+
+            function getStatusClass(status) {
+                return status === "active" ? "active" : status === "inactive" ? "inactive" : "";
+            }
+
+            function getRoleClass(role) {
+                return role === "Passenger" ? "passenger" : role === "admin" ? "admin" : "";
+            }
+
+            function fetchUsers() {
+                fetch("/get_users")
+                    .then(response => {
+                        if (!response.ok) throw new Error("Failed to fetch users");
+                        return response.json();
+                    })
+                    .then(data => {
+                        const selectedStatus = filterDropdown.value;
+                        tableBody.innerHTML = "";
+
+                        const filteredUsers = selectedStatus === "All"
+                            ? data
+                            : data.filter(user => user.status === selectedStatus);
+
+                        filteredUsers.forEach(user => {
+                            const profileImageUrl = user._id ? `/profile_picture/${user._id}` : "default.jpg"; // Handle missing ID
+
+                            const row = document.createElement("tr");
+                            row.innerHTML = `
+                         <td><img src="${profileImageUrl}" alt="Profile" width="40"></td>
+                         <td>${user.firstname || "N/A"}</td>
+                         <td>${user.lastname || "N/A"}</td>
+                         <td>${user.email || "N/A"}</td>
+                         <td>${user.phone || "N/A"}</td>
+                         <td class="action">
+                             <span class="status ${getRoleClass(user.role)}">${user.role || "Unknown"}</span>
+                         </td>
+                         <td class="action">
+                             <span class="status ${getStatusClass(user.status)}">${user.status || "Unknown"}</span>
+                         </td>
+                         <td class="action">
+                             <a href="/edit_user/${user._id}" class="edit">Edit</a><br><br><br>
+                             <a href="/delete_user/${user._id}" class="delete">Delete</a>
+                         </td>
+                     `;
+                            tableBody.appendChild(row);
+                        });
+                    })
+                    .catch(error => console.error("Error fetching users:", error));
+            }
+
+            fetchUsers();
+            setInterval(fetchUsers, 5000);
+            filterDropdown.addEventListener("change", fetchUsers);
+        });
+
+
+    </script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexCharts Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        #line-chart {
+            border: 2px solid red; /* Debugging: Add a border to check visibility */
+        }
+    </style>
+</head>
+<body>
+    <div id="line-chart"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async function () {
+            // Minimal test data
+            const testData = [
+                { x: new Date("2023-09-21").getTime(), y: 1 },
+                { x: new Date("2024-05-30").getTime(), y: 2 },
+                { x: new Date("2024-12-14").getTime(), y: 3 }
+            ];
+
+            // Chart options
+            const options = {
+                chart: {
+                    type: "line",
+                    height: 350,
+                    animations: {
+                        enabled: false // Disable animations for debugging
+                    }
+                },
+                series: [{ name: "Test Data", data: testData }],
+                xaxis: {
+                    type: "datetime",
+                    labels: {
+                        format: "yyyy-MM-dd" // Format x-axis labels
+                    }
+                },
+                tooltip: {
+                    x: {
+                        format: "yyyy-MM-dd" // Format tooltip dates
+                    }
+                }
+            };
+
+            // Render the chart
+            const chartElement = document.querySelector("#line-chart");
+            if (chartElement) {
+                const chart = new ApexCharts(chartElement, options);
+                chart.render();
+            } else {
+                console.error("Chart element not found.");
+            }
+        });
+    </script>
+</body>
+</html> -->

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Montserrat Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <title>e-Ticket Login </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}" />
+</head>
+
+<body>
+    <div class="main">
+        <div class="regalign">
+            <div class="login-card">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <p>SELECT DEPARTURE AND ARRIVAL</p>
+                    </div>
+                </div>
+                <form id="bookingForm" method="POST">
+                    <div class="form-group">
+                        <label for="route">Names</label>
+                        <input type="text" name="names" id="names" placeholder="Enter your names">
+                        <div class="error" id="nameError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="route">Phone Number</label>
+                        <input type="text" name="phone" id="phone" placeholder="Enter your Ohone Number">
+                        <div class="error" id="phoneError"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="route">Route</label>
+                        <select name="route_name" id="route_name">
+                            <option value="">Select Route</option>
+                            {% for route in routes %}
+                            <option value="{{ route.route_name }}" data-route-id="{{ route.route_id }}">{{
+                                route.route_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="error" id="routeError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="departure">Departure</label>
+                        <select name="departure" id="departure">
+                            <option value="">Select Departure</option>
+                            {% for station in stations %}
+                            <option value="{{ station }}">{{ station }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="error" id="departureError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="date">Departure Date</label>
+                        <input type="date" id="departure_date" name="departure_date" placeholder="yyyy-MM-dd">
+                        <div class="error" id="departure_dateError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="arrival">Arrival</label>
+                        <select name="arrival" id="arrival">
+                            <option value="">Select Arrival</option>
+                            {% for station in stations %}
+                            <option value="{{ station }}">{{ station }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="error" id="arrivalError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="train">Train Capacity</label>
+                        <select name="train" id="train_capacity">
+                            <option value="">Select Train</option>
+                            {% for train in seat_availability %}
+                            <option value="{{ train['train_name'] }}" data-train-id="{{ train['train_id'] }}"
+                                data-route-id="{{ train['route_id'] }}">
+                                {{ train['train_name'] }} ({{
+                                train['available_seats'] }} seats available)</option>
+                            {% endfor %}
+                        </select>
+                        <div class="error" id="train_capacityError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="seats">Available Seats</label>
+                        <select name="seats" id="seats">
+                            <option value="">Select Seat</option>
+                        </select>
+                        <div class="error" id="seatsError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="hidden" id="train_id" name="train_id" hidden>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="" id="route_id" name="route_id" hidden>
+                    </div>
+
+                    <button type="button" class="login-btn" id="continueBtn">
+                        Click to Continue
+                    </button>
+                </form>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+<script>
+
+    // FORMAT DATE TO CURRENT DATE:
+    document.addEventListener("DOMContentLoaded", function () {
+        // Get today's date in YYYY-MM-DD format
+        let today = new Date().toISOString().split("T")[0];
+
+        // Set the min attribute of the date input
+        document.getElementById("departure_date").setAttribute("min", today);
+    });
+
+    // ==============================================================================
+
+    document.getElementById("train_capacity").addEventListener("change", function () {
+        let selectedOption = this.options[this.selectedIndex];
+        let trainId = selectedOption.getAttribute("data-train-id");
+        let routeId = selectedOption.getAttribute("data-route-id");
+
+        document.getElementById("train_id").value = trainId;
+        document.getElementById("route_id").value = routeId;
+
+        console.log("Train ID set:", trainId);
+        console.log("Route ID set from train:", routeId);
+    });
+
+    document.getElementById("route_name").addEventListener("change", function () {
+        let selectedOption = this.options[this.selectedIndex];
+        let routeId = selectedOption.getAttribute("data-route-id");
+
+        document.getElementById("route_id").value = routeId;
+
+        console.log("Route ID set:", routeId);
+    });
+
+    // JavaScript to Update Hidden Fields:
+    // document.getElementById("train_capacity").addEventListener("change", function () {
+    //     let selectedOption = this.options[this.selectedIndex];
+    //     document.getElementById("train_id").value = selectedOption.getAttribute("data-train-id");
+    //     document.getElementById("route_id").value = selectedOption.getAttribute("data-route-id");
+    // });
+
+    // document.getElementById("route_name").addEventListener("change", function () {
+    //     let selectedOption = this.options[this.selectedIndex];
+    //     document.getElementById("route_id").value = selectedOption.getAttribute("data-route-id");
+    // });
+
+    // ==============================================================================
+    // FETCH SEATS AVAILABILITY
+
+    document.getElementById("train_capacity").addEventListener("change", function () {
+        let selectedTrain = this.value;
+        let seatsDropdown = document.getElementById("seats");
+
+        // Clear previous options
+        seatsDropdown.innerHTML = '<option value="">Select Seat</option>';
+
+        // Fetch available seats for the selected train
+        let seatData = JSON.parse('{{ seat_availability|tojson|safe }}');
+        console.log(seatData);
+
+        let selectedTrainData = seatData.find(train => train.train_name === selectedTrain);
+
+        if (selectedTrainData && selectedTrainData.seats) {
+            selectedTrainData.seats.forEach(seat => {
+                if (seat.status === "available") {
+                    let option = document.createElement("option");
+                    option.value = seat.seat_number;
+                    option.textContent = seat.seat_number;
+                    seatsDropdown.appendChild(option);
+                }
+            });
+        }
+    });
+
+
+
+
+    // ==============================================================================
+
+
+    document.getElementById("continueBtn").addEventListener("click", function () {
+    if (!validateForm()) {
+        return; // Stop execution if validation fails
+    }
+
+    let trainId = document.getElementById("train_id").value.trim();
+    let routeId = document.getElementById("route_id").value.trim();
+
+    const formData = {
+        passenger_name: document.getElementById("names").value.trim(),
+        phone_number: document.getElementById("phone").value.trim(),
+        route_name: document.getElementById("route_name").value.trim(),
+        departure: document.getElementById("departure").value.trim(),
+        departure_date: document.getElementById("departure_date").value.trim(),
+        arrival: document.getElementById("arrival").value.trim(),
+        train_capacity: document.getElementById("train_capacity").value.trim(),
+        seat_number: document.getElementById("seats").value.trim(),
+        train_id: trainId,  // Ensure train_id is included
+        route_id: routeId   // Ensure route_id is included
+    };
+
+    console.log("Sending Data to /calculate_fare:", formData);
+
+    // Step 1: Fetch the assigned departure time
+    fetch("http://127.0.0.1:5009/get_departure_time", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            departure_date: formData.departure_date,
+            route_id: formData.route_id,
+            train_id: formData.train_id
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error("Backend Error:", data.error);
+            alert("Error: " + data.error);
+            return;
+        }
+
+        // Step 2: Add the assigned departure time to formData
+        formData.departure_time = data.departure_time;
+
+        // Step 3: Calculate the fare
+        return fetch("http://127.0.0.1:5009/calculate_fare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData)
+        });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error("Backend Error:", data.error);
+            alert("Error: " + data.error);
+            return;
+        }
+
+        console.log("Calculated Fare:", data.fare);
+        formData.fare = data.fare; // Add fare to sessionStorage
+        formData.departure_time = data.departure_time; // Add departure_time to sessionStorage
+        sessionStorage.setItem("bookingData", JSON.stringify(formData));
+
+        // Redirect to confirmation page after setting fare
+        window.location.href = "/booking_confirmation";
+    })
+    .catch(error => {
+        console.error("Fetch Error:", error);
+        alert("Network error. Please try again.");
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // document.getElementById("continueBtn").addEventListener("click", function () {
+    //     if (!validateForm()) {
+    //         return; // Stop execution if validation fails
+    //     }
+
+    //     let trainId = document.getElementById("train_id").value.trim();
+    //     let routeId = document.getElementById("route_id").value.trim();
+
+    //     const formData = {
+    //         passenger_name: document.getElementById("names").value.trim(),
+    //         phone_number: document.getElementById("phone").value.trim(),
+    //         route_name: document.getElementById("route_name").value.trim(),
+    //         departure: document.getElementById("departure").value.trim(),
+    //         departure_date: document.getElementById("departure_date").value.trim(),
+    //         arrival: document.getElementById("arrival").value.trim(),
+    //         train_capacity: document.getElementById("train_capacity").value.trim(),
+    //         seat_number: document.getElementById("seats").value.trim(),
+    //         train_id: trainId,  // ✅ Ensure train_id is included
+    //         route_id: routeId   // ✅ Ensure route_id is included
+    //     };
+
+    //     console.log("Sending Data to /calculate_fare:", formData);
+
+    //     fetch("http://127.0.0.1:5009/calculate_fare", {
+    //         method: "POST",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: JSON.stringify(formData)
+    //     })
+    //         .then(response => response.json())
+    //         .then(data => {
+    //             if (data.error) {
+    //                 console.error("Backend Error:", data.error);
+    //                 alert("Error: " + data.error);
+    //                 return;
+    //             }
+
+    //             console.log("Calculated Fare:", data.fare);
+    //             formData.fare = data.fare; // ✅ Add fare to sessionStorage
+    //             sessionStorage.setItem("bookingData", JSON.stringify(formData));
+
+    //             // Redirect to confirmation page after setting fare
+    //             window.location.href = "/booking_confirmation";
+    //         })
+    //         .catch(error => {
+    //             console.error("Fetch Error:", error);
+    //             alert("Network error. Please try again.");
+    //         });
+    // });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // document.getElementById("continueBtn").addEventListener("click", function () {
+    //     if (!validateForm()) {
+    //         return; // Stop execution if validation fails
+    //     }
+
+    //     const formData = {
+    //         passenger_name: document.getElementById("names").value.trim(),
+    //         phone_number: document.getElementById("phone").value.trim(),
+    //         route_name: document.getElementById("route_name").value.trim(),
+    //         departure: document.getElementById("departure").value.trim(),
+    //         arrival: document.getElementById("arrival").value.trim(),
+    //         train_capacity: document.getElementById("train_capacity").value.trim(),
+    //         seat_number: document.getElementById("seats").value.trim(),
+    //         date: document.getElementById("date").value.trim()
+    //     };
+
+    //     // Save valid data to sessionStorage and proceed
+    //     sessionStorage.setItem("bookingData", JSON.stringify(formData));
+    //     window.location.href = "/booking_confirmation";
+
+
+
+    //     fetch("http://127.0.0.1:5009/calculate_fare", {
+    //         method: "POST",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: JSON.stringify(formData)
+    //     })
+    //         .then(response => response.json())
+    //         .then(data => {
+    //             data.fare
+    //             console.log("Calculated Fare:", data.fare);
+    //             document.getElementById("fare_display").innerText = `₦${data.fare}`;
+    //         });
+    // });
+
+    function validateForm() {
+        let hasError = false;
+
+        // Reset error messages
+        let errorFields = [
+            "nameError", "phoneError", "routeError", "departureError",
+            "arrivalError", "train_capacityError", "seatsError", "departure_dateError"
+        ];
+
+        errorFields.forEach(id => document.getElementById(id).textContent = "");
+
+        // Validation logic
+        if (document.getElementById("names").value.trim() === "") {
+            document.getElementById("nameError").textContent = "Please enter your name";
+            hasError = true;
+        }
+        if (document.getElementById("phone").value.trim() === "") {
+            document.getElementById("phoneError").textContent = "Please enter your phone number";
+            hasError = true;
+        }
+        if (document.getElementById("route_name").value === "") {
+            document.getElementById("routeError").textContent = "Please select a route";
+            hasError = true;
+        }
+        if (document.getElementById("departure").value === "") {
+            document.getElementById("departureError").textContent = "Please select a departure station";
+            hasError = true;
+        }
+        if (document.getElementById("arrival").value === "") {
+            document.getElementById("arrivalError").textContent = "Please select an arrival station";
+            hasError = true;
+        }
+        if (document.getElementById("departure").value === document.getElementById("arrival").value) {
+            document.getElementById("arrivalError").textContent = "Departure and arrival stations cannot be the same";
+            hasError = true;
+        }
+        if (document.getElementById("departure_date").value === "") {
+            document.getElementById("departure_dateError").textContent = "Please select a date";
+            hasError = true;
+        }
+        if (document.getElementById("train_capacity").value === "") {
+            document.getElementById("train_capacityError").textContent = "Please select a train";
+            hasError = true;
+        }
+        if (document.getElementById("seats").value === "") {
+            document.getElementById("seatsError").textContent = "Please select a seat";
+            hasError = true;
+        }
+
+        return !hasError; // Return true if no errors, otherwise return false
+    }
+
+
+
+    // ==============================================================================
+
+    // BOOKING FORM VALIDATION
+
+    // const bookingForm = document.getElementById("bookingForm");
+
+    // bookingForm.addEventListener("submit", function (event) {
+    //     event.preventDefault(); // Prevent default form submission
+
+    //     if (validateForm()) {
+    //         const formData = {
+    //             passenger_name: document.getElementById("names").value.trim(),
+    //             phone_number: document.getElementById("phone").value.trim(),
+    //             route_name: document.getElementById("route_name").value.trim(),
+    //             departure: document.getElementById("departure").value.trim(),
+    //             arrival: document.getElementById("arrival").value.trim(),
+    //             train_capacity: document.getElementById("train_capacity").value.trim(),
+    //             seat_number: document.getElementById("seats").value.trim(),
+    //             date: document.getElementById("date").value.trim(),
+    //             route_id: document.getElementById("route_id").value.trim(),
+    //             train_id: document.getElementById("train_id").value.trim()
+    //         };
+
+    //         console.log("Sending data:", formData);
+    //         console.log("Sending Train ID:", document.getElementById("train_id").value.trim());
+    //         console.log("Sending Route ID:", document.getElementById("route_id").value.trim());
+
+    //         fetch("http://127.0.0.1:5009/book_ticket", {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify(formData)
+    //         })
+    //             .then(response => response.json())
+    //             .then(data => {
+    //                 console.log("✅ Server Response:", data);
+
+    //                 if (data.message === "Booking successful!") {
+    //                     // Store booking details in session storage
+    //                     sessionStorage.setItem("booking_id", data.booking_id);
+    //                     sessionStorage.setItem("price", data.price);
+
+    //                     // Redirect to confirmation page
+    //                     window.location.href = "/booking_confirmation";
+    //                 } else if (data.error) {
+    //                     // If an error exists, show it properly
+    //                     alert("🚨 Error: " + data.error);
+    //                 } else {
+    //                     // Handle unexpected responses
+    //                     alert("⚠️ Unexpected error. Please try again.");
+    //                 }
+    //             })
+
+    //             .catch(error => console.error("Error:", error));
+
+
+
+    //     }
+    // });
+
+    // function validateForm() {
+    //     let hasError = false;
+
+    //     // Reset error messages
+    //     document.getElementById("nameError").textContent = "";
+    //     document.getElementById("phoneError").textContent = "";
+    //     document.getElementById("routeError").textContent = "";
+    //     document.getElementById("departureError").textContent = "";
+    //     document.getElementById("arrivalError").textContent = "";
+    //     document.getElementById("train_capacityError").textContent = "";
+    //     document.getElementById("seatsError").textContent = "";
+    //     document.getElementById("dateError").textContent = "";
+
+    //     if (document.getElementById("names").value.trim() === "") {
+    //         document.getElementById("nameError").textContent = "Please enter your name";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("phone").value.trim() === "") {
+    //         document.getElementById("phoneError").textContent = "Please enter your phone number";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("route_name").value === "") {
+    //         document.getElementById("routeError").textContent = "Please select a route";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("departure").value === "") {
+    //         document.getElementById("departureError").textContent = "Please select a departure station";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("arrival").value === "") {
+    //         document.getElementById("arrivalError").textContent = "Please select an arrival station";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("departure").value === document.getElementById("arrival").value) {
+    //         document.getElementById("arrivalError").textContent = "Departure and arrival stations cannot be the same";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("date").value === "") {
+    //         document.getElementById("dateError").textContent = "Please select a date";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("train_capacity").value === "") {
+    //         document.getElementById("train_capacityError").textContent = "Please select a train";
+    //         hasError = true;
+    //     }
+    //     if (document.getElementById("seats").value === "") {
+    //         document.getElementById("seatsError").textContent = "Please select a seat";
+    //         hasError = true;
+    //     }
+
+    //     return !hasError; // If there are no errors, return true
+    // }
+
+
+</script>

@@ -1,0 +1,122 @@
+<div class="table-container">
+    <main class="table" id="customers_table">
+        <section class="table__header">
+            <h1>Ticket Bookings</h1>
+            <div class="input-group">
+                <input type="search" placeholder="Search Data...">
+                <img src="{{ url_for('static', filename='images/search.png') }}" alt="">
+            </div>
+            <div class="export__file">
+                <label for="export-file" class="export__file-btn" title="Export File"></label>
+                <input type="checkbox" id="export-file">
+                <div class="export__file-options">
+                    <label>Export As &nbsp; &#10140;</label>
+                    <label for="export-file" id="toPDF">PDF <img
+                            src="{{ url_for('static', filename='images/pdf.png') }}" alt=""></label>
+                    <label for="export-file" id="toJSON">JSON <img
+                            src="{{ url_for('static', filename='images/json.png') }}" alt=""></label>
+                    <label for="export-file" id="toCSV">CSV <img
+                            src="{{ url_for('static', filename='images/csv.png') }}" alt=""></label>
+                    <label for="export-file" id="toEXCEL">EXCEL <img
+                            src="{{ url_for('static', filename='images/excel.png') }}" alt=""></label>
+                </div>
+            </div>
+        </section>
+        <section class="table__body">
+            <label for="filter">Filter by Status:</label>
+                <select id="filter">
+                    <option value="All">All</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            <table>
+                <thead>
+                    <tr>
+                        <th> Booking Id <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Name <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Phone Number <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Train Name <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Departure <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Arrival <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Seat No <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Fare <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Depature Date & Time <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Payment status <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Action <span class="icon-arrow">&UpArrow;</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                <tbody id="ticketBody"></tbody>
+
+
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tableBody = document.getElementById("ticketBody");
+        const filterDropdown = document.getElementById("filter");
+
+        function getPaymentStatusClass(status) {
+            if (status === "Paid") return "paid";
+            if (status === "Pending") return "pending";
+            if (status === "Cancelled") return "cancelled";
+            return "";
+        }
+
+        function fetchTickets() {
+            fetch("/get_bookings")
+                .then(response => response.json())
+                .then(data => {
+                    tableBody.innerHTML = ""; // Clear table before adding new data
+
+                    const selectedStatus = filterDropdown ? filterDropdown.value : "All";
+                    const filteredTickets = selectedStatus === "All"
+                        ? data
+                        : data.filter(ticket => ticket.payment_status === selectedStatus);
+
+                    filteredTickets.forEach(ticket => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                        <td>${ticket._id}</td>
+                        <td>${ticket.passenger_name}</td>
+                        <td>${ticket.phone_number}</td>
+                        <td>${ticket.train_name}</td>
+                        <td>${ticket.departure}</td>
+                        <td>${ticket.arrival}</td>
+                        <td>${ticket.seat_number}</td>
+                        <td>${ticket.price}</td>
+                        <td>${ticket.departure_time}</td>
+                        <td class="action">
+                            <span class="status ${getPaymentStatusClass(ticket.payment_status)}">${ticket.payment_status}</span>
+                        </td>
+                        <td class="action">
+                            <a href="/edit_booking/${ticket._id}" class="edit">Edit</a><br><br><br>
+                            <a href="/delete_booking/${ticket._id}" class="delete">Delete</a>
+                        </td>
+                    `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error("Error fetching tickets:", error));
+        }
+
+        // Initial fetch
+        fetchTickets();
+
+        // Refresh every 5 seconds
+        setInterval(fetchTickets, 5000);
+
+        // Update list when filter changes
+        if (filterDropdown) {
+            filterDropdown.addEventListener("change", fetchTickets);
+        }
+    });
+
+
+</script>

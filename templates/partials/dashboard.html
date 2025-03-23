@@ -1,0 +1,174 @@
+<div class="main-cards">
+
+  <div class="card">
+    <div class="card-inner">
+      <p class="text-primary">REGISTERED USERS</p>
+      <span class="material-icons-outlined text-blue">inventory_2</span>
+    </div>
+    <div class="dashboard-stat">
+      <span class="text-primary font-weight-bold" id="totalUsers"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-inner">
+      <p class="text-primary">TICKETS</p>
+      <span class="material-icons-outlined text-orange">add_shopping_cart</span>
+    </div>
+    <span class="text-primary font-weight-bold">83</span>
+  </div>
+
+  <div class="card">
+    <div class="card-inner">
+      <p class="text-primary">PAYMENTS</p>
+      <span class="material-icons-outlined text-green">shopping_cart</span>
+    </div>
+    <span class="text-primary font-weight-bold">79</span>
+  </div>
+
+  <div class="card">
+    <div class="card-inner">
+      <p class="text-primary">TRAINS</p>
+      <span class="material-icons-outlined text-red">notification_important</span>
+    </div>
+    <div class="dashboard_stats">
+      <span class="text-primary font-weight-bold" id="totalTrains"></span>
+    </div>
+  </div>
+
+</div>
+
+<div class="charts">
+
+  <div class="charts-card">
+    <p class="chart-title">User Registration Chart</p>
+    <div id="line-chart"></div>
+  </div>
+
+  <div class="charts-card">
+    <p class="chart-title">Payments and Tickets</p>
+    <div id="area-chart"></div>
+  </div>
+
+  <div class="charts-card">
+    <p class="chart-title">Peak Hours</p>
+    <div id="line-chart"></div>
+  </div>
+
+  <div class="charts-card">
+    <p class="chart-title">Train Delay</p>
+    <div id="line-chart-2"></div>
+  </div>
+
+  <div class="charts-card">
+    <p class="chart-title">Seat Availability</p>
+    <div id="seat-availability-chart"></div>
+  </div>
+
+</div><br><br>
+
+
+
+<script>
+
+  document.addEventListener("DOMContentLoaded", function () {
+    function fetchDashboardStats() {
+      fetch("/dashboard_stats")
+        .then(response => {
+          if (!response.ok) throw new Error("Failed to fetch dashboard stats");
+          return response.json();
+        })
+        .then(data => {
+          document.getElementById("totalUsers").innerText = data.total_users;
+          document.getElementById("totalTrains").innerText = data.total_trains;
+        })
+        .catch(error => console.error("Error fetching dashboard stats:", error));
+    }
+
+    // Fetch data when the page loads
+    fetchDashboardStats();
+
+    // Auto-update every 5 seconds
+    setInterval(fetchDashboardStats, 5000);
+  });
+
+
+
+
+  // --------------------------------------
+  let chart = null;
+
+  async function fetchUserRegistrationTrend() {
+    try {
+      const response = await fetch("http://127.0.0.1:5009/user_registration_trend");
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      console.log("Raw Data from Backend:", data);
+
+      if (!data.dates || !Array.isArray(data.dates)) {
+        console.error("Invalid data format:", data);
+        return;
+      }
+
+      let seriesData = {};
+      data.dates.sort().forEach(date => {
+        seriesData[date] = (seriesData[date] || 0) + 1;
+      });
+
+      console.log("Series Data:", seriesData);
+
+      let chartSeries = Object.entries(seriesData).map(([date, count]) => ({
+        x: new Date(date).getTime(),
+        y: count
+      }));
+
+      console.log("Processed Chart Data:", chartSeries);
+
+      if (chartSeries.length === 0) {
+        console.error("No valid data to display.");
+        return;
+      }
+
+      renderChart(chartSeries);
+
+    } catch (error) {
+      console.error("Error fetching user registration trend:", error);
+    }
+  }
+
+  function renderChart(chartSeries) {
+    const chartElement = document.querySelector("#line-chart");
+    if (!chartElement) {
+      console.error("Chart element not found.");
+      return;
+    }
+
+    if (chart) {
+      chart.destroy(); // Destroy existing chart before re-rendering
+    }
+
+    const options = {
+      chart: {
+        type: "line",
+        height: 350
+      },
+      series: [{ name: "Registrations", data: chartSeries }],
+      xaxis: { type: "datetime" }
+    };
+
+    chart = new ApexCharts(chartElement, options);
+    chart.render();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    fetchUserRegistrationTrend();
+    setInterval(fetchUserRegistrationTrend, 30000);
+  });
+
+
+
+
+</script>

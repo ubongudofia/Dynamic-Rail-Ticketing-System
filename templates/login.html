@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-Ticket Login </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}" />
+</head>
+
+<body>
+    <div class="main">
+        <div class="regalign">
+            <div class="login-card log">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <p>Welcome Back!!!</p>
+                    </div>
+                </div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email">
+                        <div class="error" id="emailError"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Create New Password">
+                        <div class="error" id="passwordError"></div>
+                    </div>
+
+                    <button type="submit" class="login-btn" id="loginButton">
+                        Login
+                    </button>
+                </form>
+
+                <div class="signup-link">
+                    <p>Don't have an account? <a href="/register">Signup</a></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!--  Ensure the script is linked correctly -->
+    <script>
+
+        // LOGIN VALIDATION STRATS HERE -----------------------------------------------------------------
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const loginForm = document.getElementById("loginForm");
+
+            loginForm.addEventListener("submit", function (event) {
+
+                event.preventDefault();
+
+                document.getElementById("emailError").textContent = '';
+                document.getElementById("passwordError").textContent = '';
+
+                let isValid = true;
+                const email = document.getElementById("email").value.trim();
+                const password = document.getElementById("password").value.trim();
+
+                if (email === "") {
+                    document.getElementById("emailError").textContent = "Email is required.";
+                    isValid = false;
+                }
+
+                if (password === "") {
+                    document.getElementById("passwordError").textContent = "Password is required.";
+                    isValid = false;
+                }
+
+                if (!isValid) return;
+
+                fetch('/submit_login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            sessionStorage.setItem("email", email);
+                            window.location.href = data.redirect;
+                        } else {
+                            document.getElementById("passwordError").textContent = data.error;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Login error:", error);
+                    });
+
+            })
+
+        })
+
+
+        // LOGIN VALIDATION ENDS HERE -------------------------------------------------------------------
+
+
+
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,181 @@
+<div class="table-container">
+    <main class="table" id="customers_table">
+        <section class="table__header">
+            <h1>Available Trains</h1>
+            <div class="input-group">
+                <input type="search" placeholder="Search Data...">
+                <img src="{{ url_for('static', filename='images/search.png') }}" alt="">
+            </div>
+            <div class="export__file">
+                <label for="export-file" class="export__file-btn" title="Export File"></label>
+                <input type="checkbox" id="export-file">
+                <div class="export__file-options">
+                    <label>Export As &nbsp; &#10140;</label>
+                    <label for="export-file" id="toPDF">PDF <img
+                            src="{{ url_for('static', filename='images/pdf.png') }}" alt=""></label>
+                    <label for="export-file" id="toJSON">JSON <img
+                            src="{{ url_for('static', filename='images/json.png') }}" alt=""></label>
+                    <label for="export-file" id="toCSV">CSV <img
+                            src="{{ url_for('static', filename='images/csv.png') }}" alt=""></label>
+                    <label for="export-file" id="toEXCEL">EXCEL <img
+                            src="{{ url_for('static', filename='images/excel.png') }}" alt=""></label>
+                </div>
+            </div>
+        </section>
+        <section class="table__body">
+
+
+            <div class="filter">
+                <label for="filter">Filter By Status:</label>
+                <select id="filter">
+                    <option value="All">All</option>
+                    <option value="active">Active</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="out-of-service">Out of Service</option>
+                </select>
+            </div>
+
+            <!-- <div class="add__new">
+                <a href="/add_train" class="add__new-btn">Add New Train</a>
+            </div> -->
+
+
+            <table id="trainTable">
+                <thead>
+                    <tr>
+                        <th> Train Name <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Train_id <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Capacity <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Status <span class="icon-arrow">&UpArrow;</span></th>
+                        <th> Action <span class="icon-arrow">&UpArrow;</span></th>
+                    </tr>
+                </thead>
+                <tbody id="trainBody">
+                    <!-- Data will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+</div>
+
+<!-- <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tableBody = document.getElementById("trainBody");
+        const filterDropdown = document.getElementById("filter");
+
+
+        function getStatusClass(status) {
+            if (status === "Active") return "active";
+            if (status === "Maintenance") return "maintenance";
+            if (status === "Out of Service") return "out-of-service";
+            return "";
+        }
+
+
+
+        function fetchTrains() {
+            fetch("/get_trains")
+                .then(response => response.json())
+                .then(data => {
+                    const selectedStatus = filterDropdown.value;
+                    tableBody.innerHTML = ""; // Clear existing rows
+
+                    // Filter data before displaying
+                    const filteredTrains = selectedStatus === "All"
+                        ? data  // Show all if "All" is selected
+                        : data.filter(train => train.status === selectedStatus);
+
+
+
+                    fetchTrains.forEach(train => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                                <td>${train.train_name}</td>
+                                <td>${train.train_number}</td>
+                                <td>${train.capacity}</td>
+                                <td class="action">
+                                    <span class="status ${getStatusClass(train.status)}">${train.status}</span>
+                                </td>
+                                <td class="action">
+                                    <a href="/edit_train/${train.train_number}" class="edit">Edit
+                                    </a>
+                                    <a href="/delete_train/${train.train_number}" class="delete">Delete
+                                    </a>
+                                </td>
+                                
+                            `;
+                        tableBody.appendChild(row);
+                    });
+                })
+        })
+        .catch(error => console.error("Error fetching trains:", error));
+        }
+
+    // Initial fetch
+    fetchTrains();
+
+    // Refresh data every 5 seconds
+    setInterval(fetchTrains, 5000);
+
+    // Update list when filter changes
+    filterDropdown.addEventListener("change", fetchTrains);
+    });
+</script> -->
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tableBody = document.getElementById("trainBody");
+        const filterDropdown = document.getElementById("filter");
+
+        function getStatusClass(status) {
+            if (status === "Active") return "active";
+            if (status === "Maintenance") return "maintenance";
+            if (status === "Out of Service") return "out-of-service";
+            return "";
+        }
+
+        function fetchTrains() {
+            fetch("/get_trains")
+                .then(response => response.json())
+                .then(data => {
+                    const selectedStatus = filterDropdown.value; // Get selected status
+                    tableBody.innerHTML = ""; // Clear existing rows
+
+                    // Filter data before displaying
+                    const filteredTrains = selectedStatus === "All"
+                        ? data  // Show all if "All" is selected
+                        : data.filter(train => train.status === selectedStatus);
+
+                    // Display the filtered trains
+                    filteredTrains.forEach(train => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${train.train_name}</td>
+                            <td>${train.train_number}</td>
+                            <td>${train.capacity}</td>
+                            <td class="action">
+                                <span class="status ${getStatusClass(train.status)}">${train.status}</span>
+                            </td>
+                            <td class="action">
+                                <a href="/edit_train/${train.train_number}" class="edit">Edit</a>
+                                <a href="/delete_train/${train.train_number}" class="delete">Delete</a>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error("Error fetching trains:", error));
+        }
+
+        // Initial fetch
+        fetchTrains();
+
+        // Refresh data every 5 seconds
+        setInterval(fetchTrains, 5000);
+
+        // Update list when filter changes
+        filterDropdown.addEventListener("change", fetchTrains);
+    });
+</script>

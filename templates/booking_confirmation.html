@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Montserrat Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <title>e-Ticket Login </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}" />
+</head>
+
+<body>
+    <div class="main">
+        <div class="blocks regalign">
+            <div class="right">
+                <div class="trip-detail-container">
+                    <div class="one-way-container">
+                        <h3 class="trip-detail-title" style="margin-top: 40px; text-align: center;">Ticket Booking
+                            Information</h3>
+                        <table>
+                            <table >
+                                <tr>
+                                    <td>Passenger Name:</td>
+                                    <td id="confirmName"></td>
+                                </tr>
+                                <tr>
+                                    <td>Phone Number:</td>
+                                    <td id="confirmPhone"></td>
+                                </tr>
+                                <tr>
+                                    <td>Route:</td>
+                                    <td><td id="confirmRoute"></td>
+                                </tr>
+                                <tr>
+                                    <td>Train Name:</td>
+                                    <td id="confirmTrain"></td>
+                                </tr>
+                                <tr>
+                                    <td>Departure:</td>
+                                    <td id="confirmDeparture"></td>
+                                </tr>
+                                <tr>
+                                    <td>Departure Date & Time:</td>
+                                    <td id="confirmDate"></td>
+                                </tr>
+                                <tr>
+                                    <td>Arrival:</td>
+                                    <td id="confirmArrival"></td>
+                                </tr>
+                                <tr>
+                                    <td>Seat Number:</td>
+                                    <td id="confirmSeat"></td>
+                                </tr>
+                                
+                            </table>
+                        </table>
+                    </div>
+                    <hr><br>
+                    <div class="price-container">
+                        <h3 class="trip-detail-title">Price</h3>
+                        <table>
+                            <tr>
+                                <td>Total Price:</td>
+                                <td id="fare_display"></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                </div>
+                <div class="buttons">
+                    <button type="button cancel_style"
+                        style="background-color: white; color: red; border: 2px solid red;" id="cancelBtn">Cancel</button>
+                    <button type="button" id="bookTicketBtn">Book Ticket</button>
+                </div>
+            </div>
+
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+<script>
+
+// Load booking data
+document.addEventListener("DOMContentLoaded", function () {
+    const bookingData = JSON.parse(sessionStorage.getItem("bookingData"));
+
+    if (bookingData) {
+        document.getElementById("confirmName").textContent = bookingData.passenger_name;
+        document.getElementById("confirmPhone").textContent = bookingData.phone_number;
+        document.getElementById("confirmRoute").textContent = bookingData.route_name;
+        document.getElementById("confirmTrain").textContent = bookingData.train_name;
+        document.getElementById("confirmDeparture").textContent = bookingData.departure;
+        document.getElementById("confirmDate").textContent = bookingData.departure_time;
+        document.getElementById("confirmArrival").textContent = bookingData.arrival;
+        document.getElementById("confirmTrain").textContent = bookingData.train_capacity;
+        document.getElementById("confirmSeat").textContent = bookingData.seat_number;
+        
+
+        // Fetch price dynamically (replace with backend API call if needed)
+        document.getElementById("fare_display").innerText = `₦${bookingData.fare}.00`;
+    }
+});
+
+// Handle final booking
+// Handle final booking
+document.getElementById("bookTicketBtn").addEventListener("click", function () {
+    const bookingData = JSON.parse(sessionStorage.getItem("bookingData"));
+
+    fetch("http://127.0.0.1:5009/book_ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bookingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === "Booking successful!") {
+            alert("✅ Booking Confirmed!");
+
+            // Store booking details in sessionStorage for the success page
+            sessionStorage.setItem("bookingDetails", JSON.stringify({
+                booking_id: data.booking_id,
+                ...data.booking_data  // Include all booking details
+            }));
+
+            // Redirect to success page
+            window.location.href = "/success";
+        } else {
+            alert("🚨 Error: " + data.error);
+        }
+    })
+    .catch(error => console.error("Error:", error));
+});
+
+// Handle cancellation
+document.getElementById("cancelBtn").addEventListener("click", function () {
+    sessionStorage.removeItem("bookingData");
+    window.location.href = "/destination";
+});
+
+
+
+
+
+</script>

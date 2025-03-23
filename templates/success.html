@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Montserrat Font -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <title>e-Ticket Login </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}" />
+</head>
+
+<body>
+    <div class="main">
+        <div class="blocks regalign">
+            <div class="right">
+                <div class="trip-detail-container">
+                    <div class="one-way-container">
+                        <h3 class="trip-detail-title" style="margin-top: 40px; text-align: center;">Print Ticket Booking</h3>
+                        <table>
+                            <tr>
+                                <td>Ticket ID:</td>
+                                <td id="booking_id"></td>
+                            </tr>
+                            <tr>
+                                <td>Passenger Name:</td>
+                                <td id="confirmName"></td>
+                            </tr>
+                            <tr>
+                                <td>Phone Number:</td>
+                                <td id="confirmPhone"></td>
+                            </tr>
+                            <tr>
+                                <td>Route:</td>
+                                <td id="confirmRoute"></td>
+                            </tr>
+                            <tr>
+                                <td>Train Name:</td>
+                                <td id="confirmTrain"></td>
+                            </tr>
+                            <tr>
+                                <td>Departure:</td>
+                                <td id="confirmDeparture"></td>
+                            </tr>
+                            <tr>
+                                <td>Arrival:</td>
+                                <td id="confirmArrival"></td>
+                            </tr>
+                            <tr>
+                                <td>Seat Number:</td>
+                                <td id="confirmSeat"></td>
+                            </tr>
+                            <tr>
+                                <td>Departure Date & Time:</td>
+                                <td id="departure_time"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <hr><br>
+                    <div class="price-container">
+                        <h3 class="trip-detail-title">Price</h3>
+                        <table>
+                            <tr>
+                                <td>Total Price:</td>
+                                <td id="fare_display">Paid</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                </div>
+                <div class="buttons">
+                    <a href="/"><button type="button cancel_style"
+                            style="width: 200px; background-color: white; color: rgb(15, 154, 20); border: 2px solid rgb(15, 154, 20); ;" id="cancelBtn">Return
+                            Home</button></a>
+                    <button type="button" id="bookTicketBtn">Print Ticket</button>
+                </div>
+            </div>
+
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const bookingDetails = JSON.parse(sessionStorage.getItem("bookingDetails"));
+
+    if (bookingDetails) {
+        document.getElementById("booking_id").textContent = bookingDetails.booking_id;
+        document.getElementById("confirmName").textContent = bookingDetails.passenger_name;
+        document.getElementById("confirmPhone").textContent = bookingDetails.phone_number;
+        document.getElementById("confirmRoute").textContent = bookingDetails.route_name;
+        document.getElementById("confirmTrain").textContent = bookingDetails.train_name;
+        document.getElementById("confirmDeparture").textContent = bookingDetails.departure;
+        document.getElementById("confirmArrival").textContent = bookingDetails.arrival;
+        document.getElementById("confirmSeat").textContent = bookingDetails.seat_number;
+        document.getElementById("departure_time").textContent = bookingDetails.departure_time;
+        document.getElementById("fare_display").textContent = bookingDetails.payment_status;
+    } else {
+        alert("No booking details found. Please start a new booking.");
+        window.location.href = "/";  // Redirect to home page
+    }
+});
+
+
+
+
+
+
+
+
+document.getElementById("bookTicketBtn").addEventListener("click", function () {
+    // Create a new window or iframe for printing
+    const printWindow = window.open("", "_blank");
+
+    // Get the ticket content
+    const ticketContent = document.querySelector("table").outerHTML;
+
+    // Write the ticket content to the new window
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Ticket Receipt</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 20px;
+                    }
+                    table, th, td {
+                        border: 1px solid #000;
+                    }
+                    th, td {
+                        padding: 10px;
+                        text-align: left;
+                    }
+                    h3 {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    @media print {
+                        button {
+                            display: none;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <h3>Ticket Booking Information</h3>
+                ${ticketContent}
+                <script>
+                    window.onload = function() {
+                        window.print();  // Automatically trigger print dialog
+                        window.onafterprint = function() {
+                            window.close();  // Close the print window after printing
+                        };
+                    };
+                <\/script>
+            </body>
+        </html>
+    `);
+
+    // Close the document for printing
+    printWindow.document.close();
+});
+
+
+
+
+
+</script>

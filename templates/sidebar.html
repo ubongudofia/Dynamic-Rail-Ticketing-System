@@ -1,0 +1,54 @@
+<!-- Sidebar -->
+
+<aside id="sidebar">
+  <div class="sidebar-title">
+    <div class="sidebar-brand">
+      <span class="material-icons-outlined">inventory</span> Rail e-Ticketing
+    </div>
+    <span class="material-icons-outlined" onclick="closeSidebar()">close</span>
+  </div>
+
+  <ul class="sidebar-list">
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('dashboard') }}" id="dashboard-link">
+        <span class="material-icons-outlined">dashboard</span> Dashboard
+      </a>
+    </li>
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('users') }}">
+        <span class="material-icons-outlined">inventory_2</span> Users
+      </a>
+    </li>
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('tickets') }}">
+        <span class="material-icons-outlined">fact_check</span> Tickets & Bookings
+      </a>
+    </li>
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('trains') }}">
+        <span class="material-icons-outlined">add_shopping_cart</span> Trains
+      </a>
+    </li>
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('stations') }}">
+        <span class="material-icons-outlined">shopping_cart</span> Train Routes
+      </a>
+    </li>
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('payments') }}">
+        <span class="material-icons-outlined">poll</span> Payments
+      </a>
+    </li>
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('analytics') }}">
+        <span class="material-icons-outlined">poll</span> Analytics
+      </a>
+    </li>
+    <li class="sidebar-list-item">
+      <a href="{{ url_for('settings') }}">
+        <span class="material-icons-outlined">settings</span> Settings
+      </a>
+    </li>
+  </ul>
+</aside>
+<!-- End Sidebar -->
