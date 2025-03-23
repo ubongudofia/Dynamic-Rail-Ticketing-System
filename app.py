@@ -30,7 +30,7 @@ app.secret_key = 'thiskeyissupposedtobeprivateandonlyknowbytheadmin'
 CORS(app)
 
 # Use a single connection for both PyMongo and GridFS
-MONGO_URI = "mongodb+srv://udofiaubong10:qAWzNlJT6x2vSCdb@dsamessenger.tqp9u.mongodb.net/e_ticketing"
+MONGO_URI = ""
 mongo_client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())  # Secure TLS connection
 
 # Set up database and GridFS

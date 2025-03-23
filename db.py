@@ -8,7 +8,7 @@ import random
 
 
 # MongoDB connection string
-mongo_client = "mongodb+srv://udofiaubong10:qAWzNlJT6x2vSCdb@dsamessenger.tqp9u.mongodb.net"
+mongo_client = ""
 
 try:
     # Connect to MongoDB with SSL certification
